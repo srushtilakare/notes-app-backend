@@ -3,11 +3,17 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app import models, schemas
-from app.auth import hash_password
+
+from app.auth import (
+    hash_password,
+    verify_password,
+    create_access_token
+)
 
 router = APIRouter()
 
 
+# REGISTER USER
 @router.post("/register", response_model=schemas.UserResponse)
 def register_user(
     user: schemas.UserCreate,
@@ -28,7 +34,7 @@ def register_user(
     # Hash password
     hashed_pw = hash_password(user.password)
 
-    # Create new user
+    # Create user
     new_user = models.User(
         email=user.email,
         password=hashed_pw
@@ -39,3 +45,45 @@ def register_user(
     db.refresh(new_user)
 
     return new_user
+
+
+# LOGIN USER
+@router.post("/login", response_model=schemas.Token)
+def login_user(
+    user: schemas.UserLogin,
+    db: Session = Depends(get_db)
+):
+
+    # Find user
+    existing_user = db.query(models.User).filter(
+        models.User.email == user.email
+    ).first()
+
+    # Check email
+    if not existing_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+
+    # Verify password
+    valid_password = verify_password(
+        user.password,
+        existing_user.password
+    )
+
+    if not valid_password:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+
+    # Create JWT token
+    access_token = create_access_token(
+        data={"sub": existing_user.email}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
