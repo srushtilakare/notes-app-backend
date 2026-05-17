@@ -36,6 +36,7 @@ class NoteResponse(BaseModel):
     content: str
     created_at: datetime
     updated_at: datetime
+    is_pinned: int
 
     class Config:
         from_attributes = True

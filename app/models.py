@@ -55,6 +55,10 @@ class Note(Base):
         "User",
         back_populates="notes"
     )
+    is_pinned = Column(
+    Integer,
+    default=0
+    )
 
 # SHARED NOTES TABLE
 class SharedNote(Base):
